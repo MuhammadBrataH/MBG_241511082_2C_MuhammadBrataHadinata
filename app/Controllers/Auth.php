@@ -1,49 +1,69 @@
-<?php
+<?php namespace App\Controllers;
 
-namespace App\Controllers;
 use App\Models\UserModel;
+use CodeIgniter\Controller;
 
-class Auth extends BaseController
+class Auth extends Controller
 {
-    public function index()
-    {
-        return view('login');
-    }
-
     public function login()
-{
-    $userModel = new UserModel();
-    $username  = $this->request->getPost('username');
-    $password  = $this->request->getPost('password');
-
-    $user = $userModel->getUserByUsername($username);
-
-    if ($user && password_verify($password, $user['password'])) {
-        // set session
-        session()->set([
-            'user_id'   => $user['id'],
-            'nama'      => $user['nama'],
-            'username'  => $user['username'],
-            'role'      => $user['role'],
-            'logged_in' => true,
-        ]);
-
-        // redirect berdasarkan role
-        if ($user['role'] == 'admin') {
-            return redirect()->to('/admin');
-        } else {
-            return redirect()->to('/student');
+    {
+        helper(['form']);
+        if (session()->get('logged_in')) {
+            if (session()->get('role') === 'gudang') {
+                return redirect()->to(base_url('gudang/dashboard'));
+            } else {
+                return redirect()->to(base_url('dapur/dashboard'));
+            }
         }
-    } else {
-        session()->setFlashdata('error', 'Username atau Password salah!');
-        return redirect()->to('/auth');
+        return view('auth/login');
     }
-}
 
+    public function processLogin()
+    {
+        $model = new UserModel();
+        $email = $this->request->getPost('email');
+        $password = $this->request->getPost('password');
 
+        $user = $model->where('email', $email)->first();
+
+        if ($user) {
+            
+            // PERBAIKAN KRITIS: Ganti password_verify dengan pembandingan MD5
+            // Hash password inputan dari user menggunakan MD5
+            $input_hash = md5($password);
+            
+            if ($input_hash === $user['password']) { // Perbandingan langsung hash MD5 dari input dan DB
+                $ses_data = [
+                    'user_id'   => $user['id'],
+                    'name'      => $user['name'],
+                    'email'     => $user['email'],
+                    'role'      => $user['role'],
+                    'logged_in' => TRUE
+                ];
+                session()->set($ses_data);
+                
+                session()->setFlashdata('success', 'Selamat datang, ' . $user['name'] . '!');
+
+                // Arahkan berdasarkan role
+                if ($user['role'] === 'gudang') {
+                    return redirect()->to(base_url('gudang/dashboard'));
+                } else { // 'dapur'
+                    return redirect()->to(base_url('dapur/dashboard'));
+                }
+            } else {
+                session()->setFlashdata('error', 'Email atau Password Salah.');
+                return redirect()->to(base_url('login'))->withInput();
+            }
+        } else {
+            session()->setFlashdata('error', 'Email atau Password Salah.');
+            return redirect()->to(base_url('login'))->withInput();
+        }
+    }
+    
     public function logout()
     {
         session()->destroy();
-        return redirect()->to('/auth');
+        session()->setFlashdata('success', 'Anda berhasil logout.');
+        return redirect()->to(base_url('login'));
     }
 }
