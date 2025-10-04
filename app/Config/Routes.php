@@ -17,7 +17,12 @@ $routes->get('logout', 'Auth\AuthController::logout');
 
 // 3. Rute yang Dilindungi (Filter Applied)
 $routes->group('gudang', ['filter' => 'auth:gudang'], function($routes){
-    $routes->get('dashboard', 'Gudang\DashboardController::index'); 
+    $routes->get('dashboard', 'Gudang\DashboardController::index');
+    // Bahan Baku (CRUD)
+    $routes->get('bahan-baku', 'Gudang\BahanBakuController::index');           
+    $routes->get('bahan-baku/add', 'Gudang\BahanBakuController::create');      // [GET Form Tambah]
+    $routes->post('bahan-baku/save', 'Gudang\BahanBakuController::store');     // [POST Proses Simpan]
+    // 
 });
 
 $routes->group('dapur', ['filter' => 'auth:dapur'], function($routes){
