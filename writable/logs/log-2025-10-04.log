@@ -832,3 +832,95 @@ DEBUG - 2025-10-04 11:29:16 --> Session: Class initialized using 'CodeIgniter\Se
 DEBUG - 2025-10-04 11:29:17 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-10-04 11:34:03 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-10-04 11:34:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:03 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:08 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:10 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:10 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:13 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:13 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:15 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 11:44:16 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:14:32 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:14:40 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:15:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2025-10-04 12:15:04 --> ErrorException: Undefined array key "tanggal_kadaluarsa"
+[Method: POST, Route: gudang/bahan-baku/update-stok]
+in APPPATH\Models\BahanBakuModel.php on line 30.
+ 1 APPPATH\Models\BahanBakuModel.php(30): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array key "tanggal_kadaluarsa"', 'C:\\xampp\\htdocs\\MBG_241511082_2C_Muhammad Brata Hadinata\\app\\Models\\BahanBakuModel.php', 30)
+ 2 SYSTEMPATH\BaseModel.php(1691): App\Models\BahanBakuModel->setStatus([...])
+ 3 SYSTEMPATH\BaseModel.php(1019): CodeIgniter\BaseModel->trigger('beforeUpdate', [...])
+ 4 SYSTEMPATH\Model.php(860): CodeIgniter\BaseModel->update([...], [...])
+ 5 SYSTEMPATH\BaseModel.php(749): CodeIgniter\Model->update('3', [...])
+ 6 APPPATH\Controllers\Gudang\BahanBakuController.php(119): CodeIgniter\BaseModel->save([...])
+ 7 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Gudang\BahanBakuController->updateStok()
+ 8 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Gudang\BahanBakuController))
+ 9 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+12 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+13 SYSTEMPATH\rewrite.php(44): require_once('C:\\xampp\\htdocs\\MBG_241511082_2C_Muhammad Brata Hadinata\\public\\index.php')
+DEBUG - 2025-10-04 12:15:16 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:15:28 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2025-10-04 12:15:28 --> ErrorException: Undefined array key "tanggal_kadaluarsa"
+[Method: POST, Route: gudang/bahan-baku/update-stok]
+in APPPATH\Models\BahanBakuModel.php on line 30.
+ 1 APPPATH\Models\BahanBakuModel.php(30): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array key "tanggal_kadaluarsa"', 'C:\\xampp\\htdocs\\MBG_241511082_2C_Muhammad Brata Hadinata\\app\\Models\\BahanBakuModel.php', 30)
+ 2 SYSTEMPATH\BaseModel.php(1691): App\Models\BahanBakuModel->setStatus([...])
+ 3 SYSTEMPATH\BaseModel.php(1019): CodeIgniter\BaseModel->trigger('beforeUpdate', [...])
+ 4 SYSTEMPATH\Model.php(860): CodeIgniter\BaseModel->update([...], [...])
+ 5 SYSTEMPATH\BaseModel.php(749): CodeIgniter\Model->update('3', [...])
+ 6 APPPATH\Controllers\Gudang\BahanBakuController.php(119): CodeIgniter\BaseModel->save([...])
+ 7 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Gudang\BahanBakuController->updateStok()
+ 8 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Gudang\BahanBakuController))
+ 9 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+12 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+13 SYSTEMPATH\rewrite.php(44): require_once('C:\\xampp\\htdocs\\MBG_241511082_2C_Muhammad Brata Hadinata\\public\\index.php')
+DEBUG - 2025-10-04 12:15:33 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:16:37 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:16:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:17:14 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:17:18 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:17:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:17:42 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2025-10-04 12:17:42 --> ErrorException: Undefined array key "tanggal_kadaluarsa"
+[Method: POST, Route: gudang/bahan-baku/update-stok]
+in APPPATH\Models\BahanBakuModel.php on line 30.
+ 1 APPPATH\Models\BahanBakuModel.php(30): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array key "tanggal_kadaluarsa"', 'C:\\xampp\\htdocs\\MBG_241511082_2C_Muhammad Brata Hadinata\\app\\Models\\BahanBakuModel.php', 30)
+ 2 SYSTEMPATH\BaseModel.php(1691): App\Models\BahanBakuModel->setStatus([...])
+ 3 SYSTEMPATH\BaseModel.php(1019): CodeIgniter\BaseModel->trigger('beforeUpdate', [...])
+ 4 SYSTEMPATH\Model.php(860): CodeIgniter\BaseModel->update([...], [...])
+ 5 SYSTEMPATH\BaseModel.php(749): CodeIgniter\Model->update('3', [...])
+ 6 APPPATH\Controllers\Gudang\BahanBakuController.php(119): CodeIgniter\BaseModel->save([...])
+ 7 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Gudang\BahanBakuController->updateStok()
+ 8 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Gudang\BahanBakuController))
+ 9 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+12 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+13 SYSTEMPATH\rewrite.php(44): require_once('C:\\xampp\\htdocs\\MBG_241511082_2C_Muhammad Brata Hadinata\\public\\index.php')
+DEBUG - 2025-10-04 12:20:34 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:20:36 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:20:39 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2025-10-04 12:20:39 --> ErrorException: Undefined array key "tanggal_kadaluarsa"
+[Method: POST, Route: gudang/bahan-baku/update-stok]
+in APPPATH\Models\BahanBakuModel.php on line 30.
+ 1 APPPATH\Models\BahanBakuModel.php(30): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Undefined array key "tanggal_kadaluarsa"', 'C:\\xampp\\htdocs\\MBG_241511082_2C_Muhammad Brata Hadinata\\app\\Models\\BahanBakuModel.php', 30)
+ 2 SYSTEMPATH\BaseModel.php(1691): App\Models\BahanBakuModel->setStatus([...])
+ 3 SYSTEMPATH\BaseModel.php(1019): CodeIgniter\BaseModel->trigger('beforeUpdate', [...])
+ 4 SYSTEMPATH\Model.php(860): CodeIgniter\BaseModel->update([...], [...])
+ 5 SYSTEMPATH\BaseModel.php(749): CodeIgniter\Model->update('3', [...])
+ 6 APPPATH\Controllers\Gudang\BahanBakuController.php(119): CodeIgniter\BaseModel->save([...])
+ 7 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Gudang\BahanBakuController->updateStok()
+ 8 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Gudang\BahanBakuController))
+ 9 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+10 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+11 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+12 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+13 SYSTEMPATH\rewrite.php(44): require_once('C:\\xampp\\htdocs\\MBG_241511082_2C_Muhammad Brata Hadinata\\public\\index.php')
+DEBUG - 2025-10-04 12:20:41 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-04 12:21:43 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.

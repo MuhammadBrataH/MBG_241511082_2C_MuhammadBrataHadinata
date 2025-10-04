@@ -81,7 +81,7 @@
                                         <td><?= esc($bahan['jumlah']) . ' ' . esc($bahan['satuan']) ?></td>
                                         <td><?= date('d M Y', strtotime($bahan['tanggal_masuk'])) ?></td>
                                         <td>
-                                            <span class="<?= (strtotime($bahan['tanggal_kadaluarsa']) < time()) ? 'text-danger fw-bold' : '' ?>">
+                                            <span class="<?= (strtotime($bahan['tanggal_kadaluarsa']) < time() || $bahan['status'] == 'kadaluarsa') ? 'text-danger fw-bold' : '' ?>">
                                                 <?= date('d M Y', strtotime($bahan['tanggal_kadaluarsa'])) ?>
                                             </span>
                                         </td>
@@ -92,32 +92,26 @@
                                                 $text_status = '';
 
                                                 switch ($status) {
-                                                    case 'tersedia':
-                                                        $badge_class = 'bg-success';
-                                                        $text_status = 'Tersedia';
-                                                        break;
-                                                    case 'segera_kadaluarsa':
-                                                        $badge_class = 'bg-warning text-dark';
-                                                        $text_status = 'Segera Kadaluarsa';
-                                                        break;
-                                                    case 'kadaluarsa':
-                                                        $badge_class = 'bg-danger';
-                                                        $text_status = 'Kadaluarsa';
-                                                        break;
-                                                    case 'habis':
-                                                        $badge_class = 'bg-secondary';
-                                                        $text_status = 'Habis';
-                                                        break;
-                                                    default:
-                                                        $badge_class = 'bg-info';
-                                                        $text_status = 'Tidak Diketahui';
+                                                    case 'tersedia': $badge_class = 'bg-success'; $text_status = 'Tersedia'; break;
+                                                    case 'segera_kadaluarsa': $badge_class = 'bg-warning text-dark'; $text_status = 'Segera Kadaluarsa'; break;
+                                                    case 'kadaluarsa': $badge_class = 'bg-danger'; $text_status = 'Kadaluarsa'; break;
+                                                    case 'habis': $badge_class = 'bg-secondary'; $text_status = 'Habis'; break;
+                                                    default: $badge_class = 'bg-info'; $text_status = 'Tidak Diketahui';
                                                 }
                                             ?>
                                             <span class="badge <?= $badge_class ?> fw-bold p-2"><?= $text_status ?></span>
                                         </td>
-                                        <td class="text-center">
-                                            <button class="btn btn-sm btn-info text-white me-1" title="Update Stok"><i class="fas fa-edit"></i></button>
-                                            <button class="btn btn-sm btn-danger" title="Hapus"><i class="fas fa-trash-alt"></i></button>
+                                        <td class="text-center text-nowrap">
+                                            <!-- Tombol Update Stok (Aktif dan merujuk ke route GET edit-stok) -->
+                                            <a href="<?= base_url('gudang/bahan-baku/edit-stok/' . $bahan['id']) ?>" 
+                                                class="btn btn-sm btn-info text-white me-1" 
+                                                title="Update Stok"><i class="fas fa-edit"></i> Stok</a>
+                                            
+                                            <!-- Tombol Hapus (Placeholder nonaktif) -->
+                                            <button 
+                                                class="btn btn-sm btn-secondary" 
+                                                disabled
+                                                title="Hapus (Nonaktif)"><i class="fas fa-trash-alt"></i></button>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>

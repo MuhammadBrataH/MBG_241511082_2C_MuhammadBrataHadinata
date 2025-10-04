@@ -22,6 +22,15 @@ class BahanBakuModel extends Model
      */
     protected function setStatus(array $data)
     {
+        // Untuk operasi UPDATE stok, kita harus mengambil tanggal_kadaluarsa dari data yang sudah ada 
+        // jika tidak disertakan dalam $data yang diupdate (misalnya saat update stok saja)
+        if (!isset($data['data']['tanggal_kadaluarsa']) && isset($data['id'])) {
+            $existingData = $this->find($data['id']);
+            if ($existingData) {
+                $data['data']['tanggal_kadaluarsa'] = $existingData['tanggal_kadaluarsa'];
+            }
+        }
+
         // Jika data tidak mengandung 'jumlah' atau 'tanggal_kadaluarsa', lewati.
         if (!isset($data['data']['jumlah']) || !isset($data['data']['tanggal_kadaluarsa'])) {
             // Jika ini adalah insert, status default bisa diatur ke 'tersedia' jika stok > 0
@@ -43,8 +52,9 @@ class BahanBakuModel extends Model
             // Hitung selisih hari antara tanggal kadaluarsa dan hari ini
             $tgl_kadaluarsa_obj = new \DateTime($tgl_kadaluarsa);
             $hari_ini_obj = new \DateTime($hari_ini);
-            $diff = $hari_ini_obj->diff($tgl_kadaluarsa_obj);
-            $days_diff = (int)$diff->days;
+            // $diff = $hari_ini_obj->diff($tgl_kadaluarsa_obj);
+            $interval = date_diff(date_create($hari_ini), date_create($tgl_kadaluarsa));
+            $days_diff = (int)$interval->days;
 
             // Pastikan tanggal_kadaluarsa belum terlampaui (sudah dicek di atas)
             if ($tgl_kadaluarsa_obj >= $hari_ini_obj && $days_diff <= 3) {
@@ -63,20 +73,13 @@ class BahanBakuModel extends Model
      */
     public function getAllBahanBaku()
     {
-        // Menggunakan findAll() untuk mengambil semua data
         $bahan_baku_list = $this->findAll();
         
         // Loop untuk update status dinamis
         foreach ($bahan_baku_list as &$bahan) {
-            // Simulasikan data yang masuk ke setStatus
             $data_temp = ['data' => $bahan];
             $updated_data = $this->setStatus($data_temp);
-            
-            // Perbarui status di array hasil (hanya untuk tampilan)
             $bahan['status'] = $updated_data['data']['status'];
-            // Status yang disimpan di DB (jika berbeda) tidak diubah di sini. 
-            // Untuk konsistensi DB, disarankan membuat CRON Job atau event untuk update status berkala.
-            // Namun, untuk mempermudah, kita fokus pada perhitungan dinamis saat READ.
         }
         return $bahan_baku_list;
     }

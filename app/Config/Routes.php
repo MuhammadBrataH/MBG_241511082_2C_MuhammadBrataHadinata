@@ -22,7 +22,11 @@ $routes->group('gudang', ['filter' => 'auth:gudang'], function($routes){
     $routes->get('bahan-baku', 'Gudang\BahanBakuController::index');           
     $routes->get('bahan-baku/add', 'Gudang\BahanBakuController::create');      // [GET Form Tambah]
     $routes->post('bahan-baku/save', 'Gudang\BahanBakuController::store');     // [POST Proses Simpan]
-    // 
+    
+    // Update Stok
+    $routes->get('bahan-baku/edit-stok/(:num)', 'Gudang\BahanBakuController::editStok/$1'); // Tampilkan form edit stok
+    $routes->post('bahan-baku/update-stok', 'Gudang\BahanBakuController::updateStok'); // Proses update stok
+
 });
 
 $routes->group('dapur', ['filter' => 'auth:dapur'], function($routes){
