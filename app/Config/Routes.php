@@ -5,4 +5,21 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Home::index');
+// 1. Rute Dasar (Root URL): Arahkan ke login
+$routes->get('/', function() {
+    return redirect()->to(base_url('login'));
+});
+
+// 2. Rute Autentikasi (TIDAK ADA FILTER!)
+$routes->get('login', 'Auth\AuthController::index');
+$routes->post('login', 'Auth\AuthController::login');
+$routes->get('logout', 'Auth\AuthController::logout');
+
+// 3. Rute yang Dilindungi (Filter Applied)
+$routes->group('gudang', ['filter' => 'auth:gudang'], function($routes){
+    $routes->get('dashboard', 'Gudang\DashboardController::index'); 
+});
+
+$routes->group('dapur', ['filter' => 'auth:dapur'], function($routes){
+    $routes->get('dashboard', 'Dapur\DashboardController::index'); 
+});
