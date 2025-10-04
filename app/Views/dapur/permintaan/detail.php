@@ -2,8 +2,6 @@
     // Menggunakan layout utama
     echo $this->extend('layout/main');
     echo $this->section('content');
-
-    // Asumsi: Variabel $permintaan sudah di-load di Controller dan berisi data join
     
     // Tentukan warna badge berdasarkan status
     $badge_class = '';

@@ -34,13 +34,16 @@ $routes->group('gudang', ['filter' => 'auth:gudang'], function($routes){
     $routes->get('permintaan', 'Gudang\PermintaanController::index');          // Lihat Daftar Permintaan (Menunggu)
     $routes->post('permintaan/proses/(:num)', 'Gudang\PermintaanController::process/$1'); // Proses ACC/Tolak
 
+    // Permintaan (Proses Persetujuan)
+    $routes->get('permintaan/list', 'Gudang\PermintaanController::list');           // Lihat Daftar Permintaan Menunggu
+    $routes->get('permintaan/detail/(:num)', 'Gudang\PermintaanController::detail/$1'); // Lihat Detail Permintaan
+    $routes->post('permintaan/proses/(:num)', 'Gudang\PermintaanController::proses/$1'); // Proses ACC/Tolak
 });
 
 $routes->group('dapur', ['filter' => 'auth:dapur'], function($routes){
     $routes->get('dashboard', 'Dapur\DashboardController::index'); 
     
     // Permintaan Bahan (Fitur Utama Dapur)
-    $routes->get('permintaan', 'Dapur\PermintaanController::status');           // **LIHAT STATUS (Fitur Lanjutan)**
     $routes->get('permintaan/baru', 'Dapur\PermintaanController::baru');        // Tampilan Form Buat Permintaan
     $routes->post('permintaan/simpan', 'Dapur\PermintaanController::simpan');  // Proses Simpan Permintaan
     $routes->get('permintaan/status', 'Dapur\PermintaanController::status');   // Lihat Status Permintaan
