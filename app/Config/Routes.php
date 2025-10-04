@@ -27,6 +27,9 @@ $routes->group('gudang', ['filter' => 'auth:gudang'], function($routes){
     $routes->get('bahan-baku/edit-stok/(:num)', 'Gudang\BahanBakuController::editStok/$1'); // Tampilkan form edit stok
     $routes->post('bahan-baku/update-stok', 'Gudang\BahanBakuController::updateStok'); // Proses update stok
 
+    // Hapus Bahan Baku (POST untuk keamanan)
+    $routes->post('bahan-baku/hapus/(:num)', 'Gudang\BahanBakuController::delete/$1'); // Proses Hapus (POST)
+    
 });
 
 $routes->group('dapur', ['filter' => 'auth:dapur'], function($routes){
