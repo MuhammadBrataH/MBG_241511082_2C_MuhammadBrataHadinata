@@ -22,41 +22,61 @@ class BahanBakuModel extends Model
      */
     protected function setStatus(array $data)
     {
-        // Ambil data yang dikirimkan (saat insert/update)
-        $jumlah = $data['data']['jumlah'] ?? 0;
-        $tgl_kadaluarsa = $data['data']['tanggal_kadaluarsa'] ?? null;
+        // Jika data tidak mengandung 'jumlah' atau 'tanggal_kadaluarsa', lewati.
+        if (!isset($data['data']['jumlah']) || !isset($data['data']['tanggal_kadaluarsa'])) {
+            // Jika ini adalah insert, status default bisa diatur ke 'tersedia' jika stok > 0
+            if (!isset($data['data']['status']) && ($data['data']['jumlah'] ?? 0) > 0) {
+                 $data['data']['status'] = 'tersedia';
+            }
+            return $data;
+        }
+
+        $jumlah = (int)$data['data']['jumlah'];
+        $tgl_kadaluarsa = $data['data']['tanggal_kadaluarsa'];
         $hari_ini = date('Y-m-d');
 
-        if ($jumlah == 0) {
-            $data['data']['status'] = 'habis'; 
-        } elseif ($tgl_kadaluarsa && strtotime($hari_ini) > strtotime($tgl_kadaluarsa)) {
-            $data['data']['status'] = 'kadaluarsa'; 
-        } elseif ($tgl_kadaluarsa) {
-            $diff = strtotime($tgl_kadaluarsa) - strtotime($hari_ini);
-            $days_diff = round($diff / (60 * 60 * 24));
-
-            if ($jumlah > 0 && $days_diff >= 0 && $days_diff <= 3) {
-                $data['data']['status'] = 'segera_kadaluarsa'; 
-            } else {
-                // Aturan Bisnis: Status Awal saat Tambah Bahan Baku adalah 'tersedia'
-                $data['data']['status'] = 'tersedia'; 
-            }
+        if ($jumlah <= 0) {
+            $data['data']['status'] = 'habis'; // 1. Habis: jika jumlah <= 0
+        } elseif (strtotime($hari_ini) > strtotime($tgl_kadaluarsa)) {
+            $data['data']['status'] = 'kadaluarsa'; // 2. Kadaluarsa: jika hari_ini > tanggal_kadaluarsa
         } else {
-             $data['data']['status'] = 'tersedia';
+            // Hitung selisih hari antara tanggal kadaluarsa dan hari ini
+            $tgl_kadaluarsa_obj = new \DateTime($tgl_kadaluarsa);
+            $hari_ini_obj = new \DateTime($hari_ini);
+            $diff = $hari_ini_obj->diff($tgl_kadaluarsa_obj);
+            $days_diff = (int)$diff->days;
+
+            // Pastikan tanggal_kadaluarsa belum terlampaui (sudah dicek di atas)
+            if ($tgl_kadaluarsa_obj >= $hari_ini_obj && $days_diff <= 3) {
+                $data['data']['status'] = 'segera_kadaluarsa'; // 3. Segera Kadaluarsa: jika sisa 0 sampai 3 hari
+            } else {
+                $data['data']['status'] = 'tersedia'; // 4. Tersedia
+            }
         }
         
         return $data;
     }
     
-    // Fungsi untuk mendapatkan semua data bahan baku dengan status yang dihitung ulang (untuk tampilan)
+    /**
+     * Mengambil semua data bahan baku dan menghitung statusnya secara dinamis 
+     * sebelum ditampilkan ke View (Read operation).
+     */
     public function getAllBahanBaku()
     {
+        // Menggunakan findAll() untuk mengambil semua data
         $bahan_baku_list = $this->findAll();
         
+        // Loop untuk update status dinamis
         foreach ($bahan_baku_list as &$bahan) {
+            // Simulasikan data yang masuk ke setStatus
             $data_temp = ['data' => $bahan];
             $updated_data = $this->setStatus($data_temp);
+            
+            // Perbarui status di array hasil (hanya untuk tampilan)
             $bahan['status'] = $updated_data['data']['status'];
+            // Status yang disimpan di DB (jika berbeda) tidak diubah di sini. 
+            // Untuk konsistensi DB, disarankan membuat CRON Job atau event untuk update status berkala.
+            // Namun, untuk mempermudah, kita fokus pada perhitungan dinamis saat READ.
         }
         return $bahan_baku_list;
     }

@@ -13,7 +13,6 @@ class BahanBakuController extends BaseController
         helper(['form']);
     }
 
-    // [METODE DUMMY INDEX]
     // Tampilkan daftar bahan baku (Read)
     public function index()
     {
