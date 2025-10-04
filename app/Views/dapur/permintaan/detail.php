@@ -1,7 +1,5 @@
 <?php 
     // Menggunakan layout utama
-    echo $this->extend('layout/main');
-    echo $this->section('content');
     
     // Tentukan warna badge berdasarkan status
     $badge_class = '';
@@ -18,6 +16,30 @@
             break;
     }
 ?>
+
+<?= $this->extend('layout/main') ?>
+
+<?= $this->section('sidebar') ?>
+    <ul class="nav flex-column mb-auto">
+        <li class="nav-item">
+            <a href="<?= base_url('dapur/dashboard') ?>" class="nav-link active">
+                <i class="fas fa-home me-2"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('dapur/permintaan/create') ?>" class="nav-link">
+                <i class="fas fa-utensils me-2"></i> Buat Permintaan Baru
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('dapur/permintaan') ?>" class="nav-link">
+                <i class="fas fa-clock me-2"></i> Lihat Status Permintaan
+            </a>
+        </li>
+    </ul>
+<?= $this->endSection() ?>
+
+<?= $this->section('content') ?>
 
 <div class="container-fluid py-4">
     <div class="row justify-content-center">

@@ -3,8 +3,7 @@
 use App\Controllers\BaseController;
 use App\Models\PermintaanModel;
 use App\Models\PermintaanDetailModel;
-use App\Models\BahanBakuModel; // Diperlukan untuk mengambil data bahan baku
-use CodeIgniter\I18n\Time;
+use App\Models\BahanBakuModel;
 
 class PermintaanController extends BaseController
 {
@@ -22,153 +21,140 @@ class PermintaanController extends BaseController
         helper(['form', 'url']);
     }
 
-    // Menampilkan form untuk membuat permintaan baru
+    // Menampilkan form buat permintaan baru
     public function baru()
     {
-        // Ambil daftar bahan baku yang tersedia (stok > 0 dan status bukan 'kadaluarsa' atau 'habis')
-        $bahan_baku = $this->bahanBakuModel->getAvailableBahanBaku();
-
+        $bahan_tersedia = $this->bahanBakuModel->getAvailableBahanBaku();
+        
         $data = [
-            'title' => 'Buat Permintaan Baru',
-            'bahan_baku' => $bahan_baku,
-            'errors' => session('errors') // Ambil error validasi
+            'title' => 'Buat Permintaan Bahan Baru',
+            'bahan_baku' => $bahan_tersedia,
         ];
         
         return view('dapur/permintaan/form', $data);
     }
 
-    /**
-     * Memproses permintaan POST dan menjalankan Transaksi Database
-     */
+    // Proses penyimpanan permintaan ke tabel permintaan dan permintaan_detail (Transaksi)
     public function simpan()
     {
-        $validationRules = [
-            'tgl_masak' => 'required|valid_date|after_or_equal[today]',
-            'menu_makan' => 'required|max_length[255]',
+        $session = session();
+        
+        // Aturan validasi
+        $rules = [
+            // Perbaikan: Menggunakan nama method validasi yang ada di PermintaanModel
+            'tgl_masak'    => 'required|valid_date|validateTanggalMasak', 
+            'menu_makan'   => 'required|max_length[255]',
             'jumlah_porsi' => 'required|integer|greater_than[0]',
-            // Validasi array detail bahan baku
-            'bahan_id' => 'required|min_length[1]',
-            'jumlah_diminta' => 'required|min_length[1]',
+            'bahan_id'     => 'required|min_length[1]', // Memastikan minimal ada satu bahan diminta
+        ];
+        
+        // Pesan error kustom untuk validasi Model
+        $messages = [
+            'tgl_masak' => [
+                'validateTanggalMasak' => 'Tanggal masak harus hari ini atau setelahnya.'
+            ]
         ];
 
-        if (!$this->validate($validationRules)) {
+        // Memvalidasi menggunakan model
+        if (!$this->validate($rules, $messages)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $pemohonId = $session->get('id');
         $bahanIds = $this->request->getPost('bahan_id');
         $jumlahDiminta = $this->request->getPost('jumlah_diminta');
-        $detailPermintaan = [];
-
-        // Gabungkan dan validasi detail array lebih lanjut
-        foreach ($bahanIds as $index => $bahanId) {
-            $jumlah = (int)$jumlahDiminta[$index];
-
-            if ($bahanId && $jumlah > 0) {
-                $detailPermintaan[] = [
-                    'bahan_id' => $bahanId,
-                    'jumlah_diminta' => $jumlah,
-                ];
-            }
-        }
         
-        // Cek minimal 1 item valid diminta
-        if (empty($detailPermintaan)) {
-            session()->setFlashdata('error', 'Permintaan bahan baku minimal harus terdiri dari satu item yang valid.');
-            return redirect()->back()->withInput();
-        }
-
-        // Mulai Transaksi Database
+        // Memulai Transaksi Database
         $this->db->transBegin();
 
         try {
-            // 1. Simpan Data Utama ke tabel `permintaan`
+            // 1. Simpan data utama ke tabel 'permintaan'
             $dataPermintaan = [
-                'pemohon_id' => session()->get('id'), // Ambil ID user dari sesi
-                'tgl_masak' => $this->request->getPost('tgl_masak'),
-                'menu_makan' => $this->request->getPost('menu_makan'),
+                'pemohon_id'   => $pemohonId,
+                'tgl_masak'    => $this->request->getPost('tgl_masak'),
+                'menu_makan'   => $this->request->getPost('menu_makan'),
                 'jumlah_porsi' => $this->request->getPost('jumlah_porsi'),
-                'status' => 'menunggu', // Status awal: menunggu
-                'created_at' => Time::now(),
+                'status'       => 'menunggu', // Status awal: menunggu
+                'created_at'   => date('Y-m-d H:i:s'),
             ];
 
-            $permintaanId = $this->permintaanModel->insert($dataPermintaan);
+            $this->permintaanModel->insert($dataPermintaan);
+            $permintaanId = $this->permintaanModel->insertID();
 
-            if (!$permintaanId) {
-                throw new \Exception('Gagal menyimpan data permintaan utama.');
+            // 2. Simpan detail bahan baku ke tabel 'permintaan_detail'
+            $detailBahan = [];
+            
+            if (is_array($bahanIds) && is_array($jumlahDiminta)) {
+                $uniqueBahanIds = [];
+                
+                foreach ($bahanIds as $index => $bahanId) {
+                    $jumlah = (int) $jumlahDiminta[$index];
+
+                    // Validasi internal: Pastikan jumlah > 0 dan bahan ID unik
+                    if ($bahanId && $jumlah > 0 && !in_array($bahanId, $uniqueBahanIds)) {
+                        $detailBahan[] = [
+                            'permintaan_id'  => $permintaanId,
+                            'bahan_id'       => $bahanId,
+                            'jumlah_diminta' => $jumlah,
+                        ];
+                        $uniqueBahanIds[] = $bahanId;
+                    }
+                }
             }
 
-            // 2. Simpan Data Detail ke tabel `permintaan_detail`
-            $detailBatch = [];
-            foreach ($detailPermintaan as $detail) {
-                $detailBatch[] = [
-                    'permintaan_id' => $permintaanId,
-                    'bahan_id' => $detail['bahan_id'],
-                    'jumlah_diminta' => $detail['jumlah_diminta'],
-                ];
+            if (empty($detailBahan)) {
+                throw new \Exception('Daftar bahan baku yang diminta tidak valid atau kosong.');
             }
+            
+            // Simpan semua detail sekaligus
+            $this->detailModel->insertBatch($detailBahan);
 
-            if (!$this->detailModel->insertBatch($detailBatch)) {
-                throw new \Exception('Gagal menyimpan detail bahan baku.');
-            }
-
-            // Commit Transaksi
+            // Commit transaksi jika semua berhasil
             $this->db->transCommit();
-
-            session()->setFlashdata('success', 'Permintaan bahan baku berhasil diajukan dengan status **MENUNGGU**. Silakan tunggu persetujuan dari Petugas Gudang.');
+            session()->setFlashdata('success', 'Permintaan bahan baku berhasil diajukan! Status: **MENUNGGU** persetujuan Gudang.');
             return redirect()->to('/dapur/permintaan/status');
 
         } catch (\Exception $e) {
-            // Rollback Transaksi jika terjadi Exception
+            // Rollback transaksi jika terjadi kesalahan
             $this->db->transRollback();
-
-            // Log error
-            log_message('error', 'Gagal Transaksi Permintaan: ' . $e->getMessage());
-            
-            session()->setFlashdata('error', 'Gagal mengajukan permintaan. Terjadi kesalahan pada sistem database. ' . $e->getMessage());
+            log_message('error', 'Error saat menyimpan permintaan: ' . $e->getMessage());
+            session()->setFlashdata('error', 'Gagal mengajukan permintaan. Terjadi kesalahan pada sistem. ' . $e->getMessage());
             return redirect()->back()->withInput();
         }
     }
-
-    // Menampilkan daftar status permintaan user yang sedang login
+    
+    // Menampilkan daftar permintaan yang diajukan oleh user yang sedang login
     public function status()
     {
         $pemohonId = session()->get('id');
-        
-        // Ambil semua permintaan yang diajukan oleh user ini
-        $permintaanList = $this->permintaanModel->getPermintaanByPemohon($pemohonId);
-
-        // Ambil detail bahan baku untuk setiap permintaan
-        foreach ($permintaanList as &$permintaan) {
-            $permintaan['details'] = $this->permintaanModel->getDetailPermintaan($permintaan['id']);
-        }
+        $dataPermintaan = $this->permintaanModel->getPermintaanByPemohon($pemohonId);
 
         $data = [
-            'title' => 'Status Permintaan Bahan',
-            'permintaanList' => $permintaanList,
+            'title'      => 'Status Permintaan Bahan',
+            'permintaan' => $dataPermintaan,
         ];
-        
+
         return view('dapur/permintaan/status', $data);
     }
-
-    // Menampilkan detail spesifik satu permintaan (jika menggunakan halaman terpisah)
+    
+    // Menampilkan detail spesifik permintaan
     public function detail($id)
     {
-        $permintaan = $this->permintaanModel
-                           ->where('id', $id)
-                           ->where('pemohon_id', session()->get('id'))
-                           ->first();
-
-        if (!$permintaan) {
-            throw new \CodeIgniter\Exceptions\PageNotFoundException('Permintaan tidak ditemukan atau Anda tidak memiliki akses.');
+        $permintaan = $this->permintaanModel->find($id);
+        
+        if (!$permintaan || $permintaan['pemohon_id'] !== session()->get('id')) {
+             session()->setFlashdata('error', 'Permintaan tidak ditemukan atau Anda tidak memiliki akses.');
+             return redirect()->to('/dapur/permintaan/status');
         }
-
-        $permintaan['details'] = $this->permintaanModel->getDetailPermintaan($id);
+        
+        $detail = $this->permintaanModel->getDetailPermintaan($id);
 
         $data = [
-            'title' => 'Detail Permintaan',
+            'title'      => 'Detail Permintaan #'.$id,
             'permintaan' => $permintaan,
+            'detail'     => $detail,
         ];
-
+        
         return view('dapur/permintaan/detail', $data);
     }
 }

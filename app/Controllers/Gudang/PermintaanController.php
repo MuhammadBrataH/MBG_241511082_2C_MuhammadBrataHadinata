@@ -1,74 +1,79 @@
 <?php namespace App\Controllers\Gudang;
 
 use App\Controllers\BaseController;
+use App\Models\BahanBakuModel;
 use App\Models\PermintaanModel;
 use App\Models\PermintaanDetailModel;
-use App\Models\BahanBakuModel;
-use CodeIgniter\I18n\Time;
 
 class PermintaanController extends BaseController
 {
     protected $permintaanModel;
     protected $permintaanDetailModel;
     protected $bahanBakuModel;
-    protected $db;
+    protected $db; // Deklarasi properti $db
 
     public function __construct()
     {
         $this->permintaanModel = new PermintaanModel();
         $this->permintaanDetailModel = new PermintaanDetailModel();
         $this->bahanBakuModel = new BahanBakuModel();
-        $this->db = \Config\Database::connect();
-        helper(['form', 'url']);
+        helper(['form', 'url', 'number']);
+        $this->db = \Config\Database::connect(); // Inisialisasi koneksi database
     }
 
     /**
-     * Menampilkan daftar permintaan dengan status 'menunggu' untuk diproses oleh Gudang.
+     * PERBAIKAN ROUTING: Mengarahkan URL /gudang/permintaan ke list()
+     * Method ini ditambahkan hanya untuk memenuhi routing default CodeIgniter
+     * dan mengarahkan ke method yang sebenarnya menampilkan daftar.
+     */
+    public function index()
+    {
+        // Panggil method list() di Controller yang sama
+        return $this->list();
+    }
+
+    /**
+     * Menampilkan daftar permintaan dengan status 'menunggu' untuk diproses Admin Gudang.
      */
     public function list()
     {
-        // Mendapatkan semua permintaan dengan status 'menunggu'
-        $permintaanMenunggu = $this->permintaanModel
-                                   ->select('permintaan.*, user.name as pemohon_name')
-                                   ->join('user', 'user.id = permintaan.pemohon_id')
-                                   ->where('permintaan.status', 'menunggu')
-                                   ->findAll();
+        // Mengambil permintaan dengan status 'menunggu' dan data pemohon
+        $listPermintaan = $this->permintaanModel->getPermintaanByStatus('menunggu');
 
         $data = [
             'title' => 'Daftar Permintaan Menunggu Persetujuan',
-            'list_permintaan' => $permintaanMenunggu
+            'list_permintaan' => $listPermintaan,
         ];
 
         return view('gudang/permintaan/list', $data);
     }
 
     /**
-     * Menampilkan detail satu permintaan beserta bahan baku yang diminta.
+     * Menampilkan detail permintaan spesifik.
      */
-    public function detail(int $id)
+    public function detail($id = null)
     {
-        // Mendapatkan data permintaan utama
-        $permintaan = $this->permintaanModel
-                           ->select('permintaan.*, user.name as pemohon_name, user.email as pemohon_email')
-                           ->join('user', 'user.id = permintaan.pemohon_id')
-                           ->find($id);
-
-        if (!$permintaan) {
-            session()->setFlashdata('error', 'Permintaan tidak ditemukan.');
+        if (!$id) {
+            session()->setFlashdata('error', 'ID Permintaan tidak valid.');
             return redirect()->to('/gudang/permintaan/list');
         }
 
-        // Mendapatkan detail bahan baku yang diminta
-        $detailBahan = $this->permintaanDetailModel
-                            ->select('permintaan_detail.*, bahan_baku.nama, bahan_baku.satuan, bahan_baku.jumlah as stok_saat_ini')
-                            ->join('bahan_baku', 'bahan_baku.id = permintaan_detail.bahan_id')
-                            ->where('permintaan_id', $id)
-                            ->findAll();
+        // Mengambil data utama permintaan
+        $permintaan = $this->permintaanModel->getPermintaanById($id);
 
+        if (!$permintaan) {
+            session()->setFlashdata('error', 'Data permintaan tidak ditemukan.');
+            return redirect()->to('/gudang/permintaan/list');
+        }
+
+        // Mengambil detail bahan baku yang diminta (JOIN permintaan_detail, bahan_baku)
+        $details = $this->permintaanDetailModel->getDetailWithBahanInfo($id);
+
+        $permintaan['details'] = $details;
+        
         $data = [
-            'title' => 'Detail Permintaan #'.$id,
+            'title' => 'Detail Permintaan #'. $id,
             'permintaan' => $permintaan,
-            'detail_bahan' => $detailBahan
         ];
 
         return view('gudang/permintaan/detail', $data);
@@ -76,65 +81,65 @@ class PermintaanController extends BaseController
 
     /**
      * Memproses persetujuan (ACC) atau penolakan (Tolak) permintaan.
-     * [KRITIS] Logika ACC melibatkan Transaksi Database dan Pengurangan Stok.
      */
-    public function proses(int $permintaanId)
+    public function proses($permintaanId)
     {
-        $action = $this->request->getPost('action'); // 'acc' atau 'tolak'
-        $alasanPenolakan = $this->request->getPost('alasan_penolakan');
-        $statusBaru = ($action === 'acc') ? 'disetujui' : 'ditolak';
+        $action = $this->request->getPost('action');
 
-        // 1. Logika TOLAK (Sederhana)
-        if ($statusBaru === 'ditolak') {
-            $this->permintaanModel->update($permintaanId, [
-                'status' => 'ditolak',
-                'alasan_penolakan' => $alasanPenolakan ?? 'Tidak ada alasan.'
-            ]);
-            session()->setFlashdata('success', 'Permintaan **DITOLAK** berhasil dicatat.');
+        if (!in_array($action, ['acc', 'tolak'])) {
+            session()->setFlashdata('error', 'Aksi tidak valid.');
+            return redirect()->back();
+        }
+
+        // 1. Validasi permintaan
+        $permintaan = $this->permintaanModel->find($permintaanId);
+        if (!$permintaan || $permintaan['status'] !== 'menunggu') {
+            session()->setFlashdata('error', 'Permintaan tidak ditemukan atau sudah diproses.');
             return redirect()->to('/gudang/permintaan/list');
         }
 
-        // 2. Logika ACC (Kompleks: Transaksi & Pengurangan Stok)
+        if ($action === 'tolak') {
+            // Logika Tolak: Hanya update status
+            $alasan = $this->request->getPost('alasan_penolakan') ?? 'Tidak ada alasan spesifik.';
+            $this->permintaanModel->update($permintaanId, ['status' => 'ditolak', 'alasan_penolakan' => $alasan]);
+            session()->setFlashdata('success', 'Permintaan #'. $permintaanId .' berhasil DITOLAK.');
+            return redirect()->to('/gudang/permintaan/list');
+        } 
+        
+        // Logika ACC: Transaksi dan Pengurangan Stok
+        $details = $this->permintaanDetailModel->getDetailWithBahanInfo($permintaanId);
         
         $this->db->transBegin();
 
         try {
-            // A. Dapatkan detail bahan yang diminta
-            $detailPermintaan = $this->permintaanDetailModel
-                                     ->where('permintaan_id', $permintaanId)
-                                     ->findAll();
-
-            if (empty($detailPermintaan)) {
-                 throw new \Exception("Detail bahan untuk permintaan ini kosong.");
-            }
-
-            // B. Proses Pengurangan Stok untuk setiap item
-            foreach ($detailPermintaan as $detail) {
+            // 2. Loop dan kurangi stok untuk setiap bahan
+            foreach ($details as $detail) {
                 $bahanId = $detail['bahan_id'];
                 $jumlahDiminta = $detail['jumlah_diminta'];
-
-                // Panggil method reduceStok() di BahanBakuModel
-                // reduceStok akan memvalidasi stok > 0 dan update status otomatis
-                $stokBerhasilDikurangi = $this->bahanBakuModel->reduceStok($bahanId, $jumlahDiminta);
                 
-                if ($stokBerhasilDikurangi === false) {
-                    // Jika reduceStok mengembalikan false (stok tidak cukup), batalkan transaksi
-                    $bahanGagal = $this->bahanBakuModel->find($bahanId);
-                    throw new \Exception("Stok bahan **".$bahanGagal['nama']."** tidak mencukupi untuk permintaan ini.");
+                // Panggil method reduceStok di BahanBakuModel
+                $stokBerhasilKurang = $this->bahanBakuModel->reduceStok($bahanId, $jumlahDiminta);
+
+                if (!$stokBerhasilKurang) {
+                    // Jika pengurangan stok gagal (stok kurang), batalkan transaksi
+                    $this->db->transRollback();
+                    $namaBahan = $detail['nama'];
+                    session()->setFlashdata('error', "Stok **{$namaBahan}** tidak mencukupi. Permintaan dibatalkan (Rollback).");
+                    return redirect()->to('/gudang/permintaan/list');
                 }
             }
 
-            // C. Update Status Permintaan menjadi 'disetujui'
+            // 3. Update status permintaan menjadi 'disetujui'
             $this->permintaanModel->update($permintaanId, ['status' => 'disetujui']);
             
-            // D. Commit Transaksi
+            // 4. Commit transaksi
             $this->db->transCommit();
-            session()->setFlashdata('success', 'Permintaan **DISETUJUI**! Stok bahan baku telah dikurangi secara otomatis.');
-            
+            session()->setFlashdata('success', 'Permintaan #'. $permintaanId .' berhasil DISETUJUI dan stok bahan baku telah dikurangi.');
+
         } catch (\Exception $e) {
-            // Rollback Transaksi jika ada kegagalan (stok tidak cukup atau DB error)
+            // Tangani error umum
             $this->db->transRollback();
-            session()->setFlashdata('error', 'Gagal memproses persetujuan: ' . $e->getMessage());
+            session()->setFlashdata('error', 'Terjadi kesalahan sistem saat memproses ACC: ' . $e->getMessage());
         }
 
         return redirect()->to('/gudang/permintaan/list');

@@ -6,12 +6,10 @@ use App\Models\BahanBakuModel;
 class BahanBakuController extends BaseController
 {
     protected $bahanBakuModel;
-    protected $db; // Tambahkan properti untuk database connection
 
     public function __construct()
     {
         $this->bahanBakuModel = new BahanBakuModel();
-        $this->db = \Config\Database::connect(); // Inisialisasi DB connection
         helper(['form', 'url']);
     }
 
@@ -36,7 +34,10 @@ class BahanBakuController extends BaseController
         return view('gudang/bahan_baku/tambah', $data);
     }
 
-    // Simpan data bahan baku baru
+    /**
+     * Simpan data bahan baku baru
+     * Termasuk validasi custom callback untuk tanggal kadaluarsa
+     */
     public function store()
     {
         $rules = [
@@ -45,10 +46,18 @@ class BahanBakuController extends BaseController
             'jumlah'             => 'required|integer|greater_than_equal_to[0]',
             'satuan'             => 'required|max_length[20]',
             'tanggal_masuk'      => 'required|valid_date',
-            'tanggal_kadaluarsa' => 'required|valid_date|after_or_equal[tanggal_masuk]',
+            // Perbaikan: Mengganti 'after_or_equal' dengan custom callback
+            'tanggal_kadaluarsa' => 'required|valid_date|callback_validateTanggalKadaluarsa[tanggal_masuk]',
+        ];
+        
+        // Menambahkan pesan custom untuk callback
+        $messages = [
+            'tanggal_kadaluarsa' => [
+                'callback_validateTanggalKadaluarsa' => 'Tanggal Kadaluarsa harus sama dengan atau setelah Tanggal Masuk.',
+            ]
         ];
 
-        if (!$this->validate($rules)) {
+        if (!$this->validate($rules, $messages)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
@@ -59,7 +68,7 @@ class BahanBakuController extends BaseController
             'satuan'             => $this->request->getPost('satuan'),
             'tanggal_masuk'      => $this->request->getPost('tanggal_masuk'),
             'tanggal_kadaluarsa' => $this->request->getPost('tanggal_kadaluarsa'),
-            // 'status' akan diisi otomatis oleh beforeInsert di Model (setStatus)
+            'created_at'         => date('Y-m-d H:i:s'), // Set manual karena useTimestamps=false
         ];
 
         $this->bahanBakuModel->insert($data);
@@ -67,7 +76,7 @@ class BahanBakuController extends BaseController
 
         return redirect()->to('/gudang/bahan-baku');
     }
-    
+
     // Tampilkan form edit stok bahan baku
     public function editStok($id = null)
     {
@@ -79,7 +88,7 @@ class BahanBakuController extends BaseController
         }
 
         $data = [
-            'title' => 'Update Stok Bahan Baku',
+            'title' => 'Update Stok Bahan: ' . $bahan['nama'],
             'bahan' => $bahan
         ];
         return view('gudang/bahan_baku/edit_stok', $data);
@@ -97,65 +106,85 @@ class BahanBakuController extends BaseController
         }
 
         $rules = [
-            'jumlah' => 'required|integer|greater_than_equal_to[0]', 
+            'jumlah' => 'required|integer|greater_than_equal_to[0]',
         ];
 
         if (!$this->validate($rules)) {
-            session()->setFlashdata('errors', $this->validator->getErrors());
-            return redirect()->back()->withInput();
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
         $newJumlah = $this->request->getPost('jumlah');
 
-        // Data yang akan diupdate, status akan dihitung ulang di Model (setStatus)
+        // Data yang akan diupdate. Model akan memanggil setStatus() otomatis melalui beforeUpdate.
         $dataUpdate = [
             'id' => $id,
             'jumlah' => $newJumlah,
-            'tanggal_kadaluarsa' => $bahan['tanggal_kadaluarsa'] // Penting untuk perhitungan status
+            // Pastikan tgl kadaluarsa tetap ada agar perhitungan status di Model berjalan
+            'tanggal_kadaluarsa' => $bahan['tanggal_kadaluarsa'] 
         ];
 
-        $this->bahanBakuModel->save($dataUpdate); // Menggunakan save() untuk update
-
-        // Ambil status terbaru setelah save
-        $updatedBahan = $this->bahanBakuModel->find($id);
-        
-        session()->setFlashdata('success', 'Stok **' . $bahan['nama'] . '** berhasil diperbarui menjadi ' . $newJumlah . ' ' . $bahan['satuan'] . '. Status terbaru: ' . strtoupper($updatedBahan['status']) . '.');
+        $this->bahanBakuModel->save($dataUpdate); 
+        session()->setFlashdata('success', 'Stok bahan baku **' . $bahan['nama'] . '** berhasil diperbarui menjadi ' . $newJumlah . ' ' . $bahan['satuan'] . '.');
         
         return redirect()->to('/gudang/bahan-baku');
     }
 
-    // Proses hapus bahan baku
-    public function delete($id = null)
+    /**
+     * @param int $id ID Bahan Baku
+     * Proses hapus bahan baku. Hanya diizinkan jika status 'kadaluarsa'.
+     */
+    public function hapus($id = null)
     {
-        // 1. Ambil data bahan baku
         $bahan = $this->bahanBakuModel->find($id);
 
         if (!$bahan) {
             session()->setFlashdata('error', 'Data bahan baku tidak ditemukan.');
-            return redirect()->back();
+            return redirect()->to('/gudang/bahan-baku');
         }
-        
-        // 2. Hitung ulang status bahan baku secara dinamis
-        // Panggil setStatus pada data yang ditemukan untuk mendapatkan status terkini
+
+        // Hitung ulang status bahan baku secara dinamis (penting sebelum hapus)
+        // Kita panggil setStatus secara manual untuk mendapatkan status terkini
         $data_temp = ['data' => $bahan];
         $updated_data = $this->bahanBakuModel->setStatus($data_temp);
         $current_status = $updated_data['data']['status'];
 
-        // 3. Aturan Bisnis: Sistem hanya mengizinkan penghapusan bahan baku yang berstatus 'kadaluarsa'
+        // Aturan Bisnis: Sistem hanya mengizinkan penghapusan bahan baku yang berstatus 'kadaluarsa'
         if ($current_status !== 'kadaluarsa') {
-            session()->setFlashdata('error', 'Penolakan! Bahan baku **' . $bahan['nama'] . '** tidak dapat dihapus karena statusnya adalah **' . strtoupper($current_status) . '**. Hanya bahan baku dengan status **Kadaluarsa** yang diizinkan untuk dihapus.');
+            session()->setFlashdata('error', 'Bahan baku **' . $bahan['nama'] . '** tidak dapat dihapus karena statusnya adalah **' . strtoupper($current_status) . '**. Hanya bahan baku dengan status **KADALUARSA** yang dapat dihapus.');
             return redirect()->to('/gudang/bahan-baku');
         }
 
-        // 4. Proses Hapus
+        // Proses hapus data
         try {
             $this->bahanBakuModel->delete($id);
             session()->setFlashdata('success', 'Bahan baku **' . $bahan['nama'] . '** (Status: Kadaluarsa) berhasil dihapus dari sistem.');
         } catch (\Exception $e) {
-            // Handle error jika ada relasi FK, meskipun tidak seharusnya terjadi pada tabel bahan_baku
-            session()->setFlashdata('error', 'Gagal menghapus bahan baku. Mungkin terkait dengan data permintaan yang masih menggunakan bahan ini.');
+            session()->setFlashdata('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
-
+        
         return redirect()->to('/gudang/bahan-baku');
+    }
+
+    /**
+     * Custom Validation Callback: Memastikan tanggal kadaluarsa >= tanggal masuk
+     * @param string $tglKadaluarsa Nilai tanggal_kadaluarsa (dari $str)
+     * @param string $tglMasukKey Nama field tanggal masuk (dari $fields)
+     * @param array $data Semua data POST
+     * @return bool
+     */
+    public function validateTanggalKadaluarsa(string $tglKadaluarsa, string $tglMasukKey, array $data): bool
+    {
+        if (!isset($data[$tglMasukKey])) {
+            return false; // Field tanggal masuk tidak ada
+        }
+        
+        $tglMasuk = $data[$tglMasukKey];
+
+        // Konversi ke timestamp untuk perbandingan
+        $tsKadaluarsa = strtotime($tglKadaluarsa);
+        $tsMasuk = strtotime($tglMasuk);
+
+        // Perbandingan: Tanggal Kadaluarsa harus >= Tanggal Masuk
+        return $tsKadaluarsa >= $tsMasuk;
     }
 }

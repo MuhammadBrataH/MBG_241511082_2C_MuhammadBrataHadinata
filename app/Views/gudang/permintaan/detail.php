@@ -8,6 +8,31 @@
 
 <?= $this->extend('layout/main') ?>
 
+<?= $this->section('sidebar') ?>
+    <ul class="nav flex-column mb-auto">
+        <li class="nav-item">
+            <a href="<?= base_url('gudang/dashboard') ?>" class="nav-link active">
+                <i class="fas fa-home me-2"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('gudang/bahan-baku') ?>" class="nav-link">
+                <i class="fas fa-boxes me-2"></i> Lihat Bahan Baku
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('gudang/bahan-baku/add') ?>" class="nav-link">
+                <i class="fas fa-plus-circle me-2"></i> Tambah Bahan Baru
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="<?= base_url('gudang/permintaan') ?>" class="nav-link">
+                <i class="fas fa-clipboard-list me-2"></i> Proses Permintaan
+            </a>
+        </li>
+    </ul>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <div class="container-fluid mt-4">
